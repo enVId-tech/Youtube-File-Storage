@@ -10,6 +10,10 @@ FRAME_HEIGHT = 1080
 FRAME_WIDTH = 1920
 
 
+# Put these in PATH in System Environment Variables
+# 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\cl.exe'
+# 'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64'
+
 def main():
     frame_pixels = np.array([])
 

@@ -61,11 +61,9 @@ def readImgToBin(file):
     # Read the image to binary, using distributed computing
     img = Image.open(file)
     img = np.array(img)
-    img = img.flatten()
-    img = img.astype(np.uint8)
     img_gpu = cuda.mem_alloc(img.nbytes)
     cuda.memcpy_htod(img_gpu, img)
-    
+
     mod = SourceModule("""
         __global__ void toBin(int *img, int *pixels, int width, int height) {
             int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -78,6 +76,13 @@ def readImgToBin(file):
     """)
 
     func = mod.get_function("toBin")
-    func(img_gpu, cuda.InOut(img), np.int32(img.shape[0]), np.int32(img.shape[1]), block=(16, 16, 1), grid=(16, 16, 1))
+    func(img_gpu,
+         cuda.InOut(img),
+         np.int32(img.shape[0]),
+         np.int32(img.shape[1]),
+         block=(16, 16, 1),
+         grid=(16, 16, 1))
     cuda.memcpy_dtoh(img, img_gpu)
+    img = img.reshape(
+        (img.shape[0], img.shape[1], -1))  # Include color channels
     return img
