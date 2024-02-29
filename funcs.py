@@ -2,6 +2,9 @@ import binascii
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import pycuda.driver as cuda
+import pycuda.autoinit
+from pycuda.compiler import SourceModule
 from functools import reduce
 from PIL import Image
 
@@ -55,11 +58,26 @@ def fillRemainingElements(pixels, frame_height, frame_width):
 
 
 def readImgToBin(file):
-    img = mpimg.imread(file)
-    # Convert the image to binary
-    npArray = np.array([])
-    for row in img:
-        npArray = np.append(npArray, row)
+    # Read the image to binary, using distributed computing
+    img = Image.open(file)
+    img = np.array(img)
+    img = img.flatten()
+    img = img.astype(np.uint8)
+    img_gpu = cuda.mem_alloc(img.nbytes)
+    cuda.memcpy_htod(img_gpu, img)
+    
+    mod = SourceModule("""
+        __global__ void toBin(int *img, int *pixels, int width, int height) {
+            int i = threadIdx.x + blockIdx.x * blockDim.x;
+            int j = threadIdx.y + blockIdx.y * blockDim.y;
+            int k = i * width + j;
+            if (i < width && j < height) {
+                pixels[k] = img[k] > 0 ? 1 : 0;
+            }
+        }
+    """)
 
-    # Convert the binary array to a list
-    return npArray.tolist()
+    func = mod.get_function("toBin")
+    func(img_gpu, cuda.InOut(img), np.int32(img.shape[0]), np.int32(img.shape[1]), block=(16, 16, 1), grid=(16, 16, 1))
+    cuda.memcpy_dtoh(img, img_gpu)
+    return img
