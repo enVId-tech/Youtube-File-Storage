@@ -8,150 +8,67 @@ from functools import reduce
 from PIL import Image
 
 
-def toTxt(binary_img, file, device='cpu'):
+def toTxt(imgFile, txtFile, device='cpu'):
     # Convert binary image to text
 
-    # Check if the binary image is a numpy array
-    if not isinstance(binary_img, np.ndarray):
-        raise ValueError('Input must be a valid numpy array')
-
-    if not os.path.exists(file):
+    if not os.path.exists(txtFile):
         raise FileNotFoundError('File not found')
 
     # Determine the conversion function based on the device
-    binary_img = readBinToTxt(binary_img, device=device)
+    binaryList = readBinToTxt(imgFile, device=device)
 
-    # Convert the binary image array to string
-    text = ''.join(map(str, binary_img))
+    shrinked = findSequence(binaryList)
+
+    # Convert the binary list to text
+    text = toText(shrinked)
 
     # Write the text to a file
-    with open(file, 'w') as f:
+    with open(txtFile, 'w') as f:
         f.write(text)
 
     return True
 
 
-def readBinToTxt(file, device='cpu'):
+def readBinToTxt(imgFile, device='cpu'):
     # Read the binary image to text, using distributed computing
     if device == 'gpu':
-        return toTxtGPU(file)
+        return toTxtGPU(imgFile)
     else:
-        return toTxtCPU(file)
+        return toTxtCPU(imgFile)
+
 
 def toTxtGPU(file):
-    # Read the binary image to text using cuda
-    import pycuda.driver as cuda
-    import pycuda.autoinit
-    from pycuda.compiler import SourceModule
-
-    # Read the image file using OpenCV
-    img = cv2.imread(str(file), cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise FileNotFoundError(f"Could not read the image file: {file}")
-
-    # Convert the image to binary (thresholding)
-    _, binary_img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY)
-
-    # Flatten the binary image array
-    binary_pixels = binary_img.flatten()
-
-    # Convert the binary image array to hexadecimal
-    hex_data = binary_pixels.tobytes()
-
-    # Allocate GPU memory
-    pixels_gpu = cuda.mem_alloc(len(hex_data))
-    hex_data_gpu = cuda.mem_alloc(len(hex_data))
-
-    # Copy data to GPU memory
-    cuda.memcpy_htod(pixels_gpu, binary_pixels)
-    cuda.memcpy_htod(hex_data_gpu, hex_data)
-
-    # Define CUDA kernel
-    mod = SourceModule("""
-        __global__ void toTxtGPU(char *pixels, char *hex_data, int pixels_size) {
-            int idx = threadIdx.x + blockIdx.x * blockDim.x;
-            if (idx < pixels_size) {
-                pixels[idx] = hex_data[idx];
-            }
-        }
-    """)
-    toTxtGPU_kernel = mod.get_function("toTxtGPU")
-
-    # Define block and grid sizes
-    block_size = 1024
-    grid_size = (len(hex_data) + block_size - 1) // block_size
-
-    # Call the CUDA kernel
-    toTxtGPU_kernel(pixels_gpu,
-                    hex_data_gpu,
-                    np.int32(len(hex_data)),
-                    block=(block_size, 1, 1),
-                    grid=(grid_size, 1))
-
-    # Copy the result back to host memory
-    cuda.memcpy_dtoh(binary_pixels, pixels_gpu)
-
-    # Convert the binary data back to image array format
-    binary_img = np.reshape(binary_pixels, binary_img.shape)
-
-    return binary_img
-
-def toTxtCPU(file):
-    # Read the image
-    img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-
-    if img is None:
-        raise FileNotFoundError(f"Could not read the image file: {file}")
-    
-    # Convert the image to binary
-    _, binary_img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY)
-
-    return binary_img
-
-def readImgToBin(file, device='cpu'):
-    # Read the image to binary, using distributed computing
-    if not os.path.exists(str(file)):
-        raise FileNotFoundError('File not found')
-
-    if device == 'gpu':
-        return toBinGPU(str(file))
-    else:
-        return toBinCPU(str(file))
-
-def toBinGPU(file):
     # Read the image to binary using cuda
     import pycuda.driver as cuda
     import pycuda.autoinit
     from pycuda.compiler import SourceModule
 
     # Read the image
-    img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread(file)
     if img is None:
         raise FileNotFoundError(f"Could not read the image file: {file}")
 
-    # Convert the image to binary (thresholding)
-    _, binary_img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY)
+    # Convert the image to grayscale
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Convert the grayscale image to binary (thresholding)
+    _, binary_img = cv2.threshold(gray_img, 128, 1, cv2.THRESH_BINARY)
 
     # Flatten the binary image array
     binary_pixels = binary_img.flatten()
 
-    # Convert the binary image array to hexadecimal
-    hex_data = binary_pixels.tobytes()
-
     # Allocate GPU memory
-    pixels_gpu = cuda.mem_alloc(len(hex_data))
-    hex_data_gpu = cuda.mem_alloc(len(hex_data))
+    pixels_gpu = cuda.mem_alloc(binary_pixels.nbytes)
 
     # Copy data to GPU memory
     cuda.memcpy_htod(pixels_gpu, binary_pixels)
-    cuda.memcpy_htod(hex_data_gpu, hex_data)
 
     # Define CUDA kernel
     mod = SourceModule("""
-        __global__ void toBinGPU(char *pixels, char *hex_data, int pixels_size) {
+        __global__ void toBinGPU(int *pixels, int pixels_size) {
             int idx = threadIdx.x + blockIdx.x * blockDim.x;
             if (idx < pixels_size) {
-                pixels[idx] = hex_data[idx];
+                pixels[idx] = pixels[idx];
             }
         }
     """)
@@ -159,32 +76,62 @@ def toBinGPU(file):
 
     # Define block and grid sizes
     block_size = 1024
-    grid_size = (len(hex_data) + block_size - 1) // block_size
+    grid_size = (binary_pixels.size + block_size - 1) // block_size
 
     # Call the CUDA kernel
     toBinGPU_kernel(pixels_gpu,
-                    hex_data_gpu,
-                    np.int32(len(hex_data)),
+                    np.int32(binary_pixels.size),
                     block=(block_size, 1, 1),
                     grid=(grid_size, 1))
-    
+
     # Copy the result back to host memory
     cuda.memcpy_dtoh(binary_pixels, pixels_gpu)
 
     # Convert the binary data back to image array format
     binary_img = np.reshape(binary_pixels, binary_img.shape)
 
-    return binary_img
+    # Convert the binary image to text
+    binary_text = ''.join(str(pixel) for pixel in binary_pixels)
+
+    return binary_text
+
+def toTxtCPU(binary):
+    # Convert the binary list to text using cpu
+    npArray = np.array(binary, dtype=np.int32)
+    return npArray
 
 
-def toBinCPU(file):
-    # Read the image
-    img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
+def findSequence(binary_list):
+    # Convert the list to a string
 
-    if img is None:
-        raise FileNotFoundError(f"Could not read the image file: {file}")
+    # Define the sequence to find
+    sequence = '1111111101'  # A string of 8 ones, followed by a zero, followed by a one
 
-    # Convert the image to binary
-    _, binary_img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY)
+    # Find the index of the sequence in the string
+    index = binary_list.find(sequence)
 
-    return binary_img
+    print(index)
+    print(binary_list[:index])
+
+    # If the sequence was found, return the part of the string up to the sequence
+    if index != -1:
+        return binary_list[:index]
+    else:
+        print('Sequence not found')
+        exit(1)
+
+
+def toText(binary_list):
+    # Join the binary list into a single string
+    binary_str = ''.join(binary_list)
+
+    # Convert the binary string to an integer
+    int_data = int(binary_str, 2)
+
+    # Convert the integer to hexadecimal
+    hex_data = hex(int_data)[2:]  # Start from index 2 to remove '0x' prefix
+
+    # Decode the hexadecimal to get the original text
+    text = binascii.unhexlify(hex_data).decode()
+
+    return text

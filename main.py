@@ -2,7 +2,7 @@ import binascii
 import cv2
 import numpy as np
 from functools import reduce
-from text_funcs import toTxt, readImgToBin
+from text_funcs import toTxt
 from txt_to_img import textToImage
 from img_to_txt import imageToText
 

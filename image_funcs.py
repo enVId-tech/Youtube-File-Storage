@@ -20,7 +20,9 @@ def fillRemainingElements(pixels, frame_height, frame_width):
     # Fill the remaining elements with empty space
     if remaining_elements > 0:
         pixels = np.append(pixels, ['1'] * 8)
-        remaining_elements -= 8
+        pixels = np.append(pixels, ['0'] * 1)
+        pixels = np.append(pixels, ['1'] * 1)
+        remaining_elements -= 10
         pixels = np.append(pixels, ['0'] * remaining_elements)
 
     return pixels
