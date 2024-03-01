@@ -2,16 +2,41 @@ import binascii
 import numpy as np
 import concurrent.futures
 import matplotlib.pyplot as plt
+from PIL import Image
 
-def toBin(BASE, file_path, mode):
-    with open(file_path, mode) as file:
-        # Read the file
-        data = file.read()
-        # Convert the file to hex
-        hex_data = binascii.hexlify(data.encode())
-        # Convert hex to binary and return as a list of digits
-        return list(bin(int(
-            hex_data, BASE))[2:])  # Start from index 2 to remove '0b' prefix
+
+def toBin(file_path, num_threads=8):
+    # Read binary data using multiple threads
+    def read_binary_chunk(chunk_start, chunk_size):
+        with open(file_path, "rb") as file:
+            file.seek(chunk_start)
+            chunk_data = file.read(chunk_size)
+        return np.frombuffer(chunk_data, dtype=np.uint8)
+
+    # Get file size
+    with open(file_path, "rb") as file:
+        file_size = file.seek(0, 2)
+
+    # Divide the file into chunks for parallel processing
+    chunk_size = file_size // num_threads
+    chunk_starts = range(0, file_size, chunk_size)
+
+    # Read chunks concurrently
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=num_threads) as executor:
+        chunks = list(
+            executor.map(read_binary_chunk, chunk_starts,
+                         [chunk_size] * num_threads))
+
+    # Concatenate chunks into a single Numpy array
+    binary_data = np.concatenate(chunks)
+
+    # Convert binary data to a list of integers (0 or 1)
+    binary_list = binary_data.astype(int)
+
+    return binary_list
+
+
 
 def fillRemainingElements(pixels, frame_height, frame_width):
     # Calculate the number of elements to fill
@@ -60,12 +85,11 @@ def toImgCPU(pixels, num_threads=8):
     # Convert the pixels to a numpy array
     pixels = np.array(pixels, dtype=np.int32)
 
-    # Use multiple threads to convert the pixels to an image
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        img = list(executor.map(lambda x: x * 255, pixels))
+    # Apply thresholding
+    pixels[pixels > 0] = 255
 
     # Return the result
-    return np.array(img, dtype=np.uint8)
+    return pixels
 
 
 def toImgGPU(pixels):
@@ -110,3 +134,20 @@ def toImgGPU(pixels):
 
     # Return the result
     return result
+
+
+def grayscaleToOneBit(image_path):
+    # Open the image and convert to grayscale
+    img = Image.open(image_path).convert("L")
+
+    # Apply thresholding
+    threshold = 128
+    img_bw = img.point(lambda p: p > threshold and 255)
+
+    # Convert to numpy array
+    pixels = np.array(img_bw)
+
+    # Normalize to 0 or 1
+    pixels[pixels > 0] = 1
+
+    return pixels
