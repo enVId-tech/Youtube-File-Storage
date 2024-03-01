@@ -23,26 +23,20 @@ def main():
     print(len(pixels))
 
     # Open the file to write a hex file to text
-    # toTxt(pixels, BASE, 'hex.txt', 'w')
+    toTxt(pixels, BASE, 'hex.txt', 'w')
 
     frame_pixels = np.append(frame_pixels, pixels)
 
-    # Fill the remaining elements with empty space
+    # # Fill the remaining elements with empty space
     frame_pixels = fillRemainingElements(frame_pixels, FRAME_HEIGHT,
                                          FRAME_WIDTH)
-    # Reshape the array to the frame dimensions
+    # # Reshape the array to the frame dimensions
     frame_pixels = frame_pixels.reshape(FRAME_HEIGHT, FRAME_WIDTH)
 
-    # print(frame_pixels.size)
+    print(frame_pixels.size)
 
-    # Save the image to a file
-    img = toImg(frame_pixels, 'image.png')
-
-    # Read the image to binary
-    pixels = readImgToBin('image.png')
-
-    # Open the file to write a binary file to text
-    toTxt(pixels, BASE, 'output.txt', 'w')
+    # # Save the image to a file
+    toImg(frame_pixels, 'image.png')
 
     exit(0)
 
