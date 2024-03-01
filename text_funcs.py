@@ -1,12 +1,8 @@
 import os
-import base64
 import binascii
 import cv2
-import torch
 import numpy as np
-from functools import reduce
-from PIL import Image
-
+import concurrent.futures
 
 def toTxt(imgFile, txtFile, device='cpu'):
     # Convert binary image to text
@@ -95,11 +91,26 @@ def toTxtGPU(file):
 
     return binary_text
 
-def toTxtCPU(binary):
-    # Convert the binary list to text using cpu
-    npArray = np.array(binary, dtype=np.int32)
-    return npArray
+def toTxtCPU(file, num_threads=8):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+        # Read the image
+        img = cv2.imread(file)
+        if img is None:
+            raise FileNotFoundError(f"Could not read the image file: {file}")
 
+        # Convert the image to grayscale
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Convert the grayscale image to binary (thresholding)
+        _, binary_img = cv2.threshold(gray_img, 128, 1, cv2.THRESH_BINARY)
+
+        # Flatten the binary image array
+        binary_pixels = binary_img.flatten()
+
+        # Convert the binary image to text
+        binary_text = ''.join(str(pixel) for pixel in binary_pixels)
+
+        return binary_text
 
 def findSequence(binary_list):
     # Convert the list to a string

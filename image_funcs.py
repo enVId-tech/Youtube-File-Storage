@@ -1,6 +1,6 @@
 import binascii
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 import matplotlib.pyplot as plt
 
 def toBin(BASE, file_path, mode):
@@ -61,7 +61,7 @@ def toImgCPU(pixels, num_threads=8):
     pixels = np.array(pixels, dtype=np.int32)
 
     # Use multiple threads to convert the pixels to an image
-    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
         img = list(executor.map(lambda x: x * 255, pixels))
 
     # Return the result

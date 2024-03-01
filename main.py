@@ -10,7 +10,7 @@ from img_to_txt import imageToText
 BASE = 16
 FRAME_HEIGHT = 1080
 FRAME_WIDTH = 1920
-
+DEVICE = 'cpu'
 
 
 # Put these in PATH in System Environment Variables
@@ -20,8 +20,8 @@ FRAME_WIDTH = 1920
 
 def main():
     # Convert the text file to an image
-    txtToImg = textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, './input_files/text.txt', 'output_files/image.png')
-    imgToTxt = imageToText('./output_files/image.png')
+    txtToImg = textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, './input_files/text.txt', 'output_files/image.png', DEVICE)
+    imgToTxt = imageToText('./output_files/image.png', DEVICE)
 
     if txtToImg and imgToTxt:
         print('Text file and image converted successfully')
@@ -35,9 +35,6 @@ def main():
             print('Image converted to text successfully')
         else:
             print('Image conversion to text failed')
-
-
-
     exit(0)
 
 
