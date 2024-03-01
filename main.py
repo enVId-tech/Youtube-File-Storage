@@ -2,9 +2,9 @@ import binascii
 import cv2
 import numpy as np
 from functools import reduce
-from funcs import toTxt, readImgToBin
-from image_conversion import toBin, fillRemainingElements, toImg
+from text_funcs import toTxt, readImgToBin
 from txt_to_img import textToImage
+from img_to_txt import imageToText
 
 # Global constants
 BASE = 16
@@ -20,12 +20,23 @@ FRAME_WIDTH = 1920
 
 def main():
     # Convert the text file to an image
-    txtToImg = textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, 'input_files/text.txt', 'output_files/image.png')
+    txtToImg = textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, './input_files/text.txt', 'output_files/image.png')
+    imgToTxt = imageToText('./output_files/image.png')
 
-    if txtToImg:
-        print('Text file converted to image successfully')
+    if txtToImg and imgToTxt:
+        print('Text file and image converted successfully')
     else:
-        print('Text file conversion to image failed')
+        if txtToImg:
+            print('Text file converted to image successfully')
+        else:
+            print('Text file conversion to image failed')
+
+        if imgToTxt:
+            print('Image converted to text successfully')
+        else:
+            print('Image conversion to text failed')
+
+
 
     exit(0)
 

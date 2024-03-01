@@ -1,6 +1,6 @@
 
 import numpy as np
-from image_conversion import toBin, fillRemainingElements, toImg
+from image_funcs import toBin, fillRemainingElements, toImg
 
 def textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, text_file, image_file):
     try:
