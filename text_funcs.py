@@ -12,7 +12,7 @@ def toTxt(imgFile, txtFile, device='cpu'):
     # Convert binary image to text
 
     if not os.path.exists(txtFile):
-        raise FileNotFoundError('File not found')
+        os.makedirs(os.path.dirname(txtFile), exist_ok=True)
 
     # Determine the conversion function based on the device
     binaryList = readBinToTxt(imgFile, device=device)
@@ -105,13 +105,10 @@ def findSequence(binary_list):
     # Convert the list to a string
 
     # Define the sequence to find
-    sequence = '1111111101'  # A string of 8 ones, followed by a zero, followed by a one
+    sequence = '1111111101'
 
     # Find the index of the sequence in the string
     index = binary_list.find(sequence)
-
-    print(index)
-    print(binary_list[:index])
 
     # If the sequence was found, return the part of the string up to the sequence
     if index != -1:
