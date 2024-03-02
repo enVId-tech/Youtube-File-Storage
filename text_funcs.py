@@ -1,8 +1,12 @@
 import os
+import base64
 import binascii
 import cv2
+import torch
 import numpy as np
-import concurrent.futures
+from functools import reduce
+from PIL import Image
+
 
 def toTxt(imgFile, txtFile, device='cpu'):
     # Convert binary image to text
@@ -31,7 +35,6 @@ def readBinToTxt(imgFile, device='cpu'):
         return toTxtGPU(imgFile)
     else:
         return toTxtCPU(imgFile)
-        # return toTxtIntegratedGraphics(imgFile, 'output_files/text.txt')
 
 
 def toTxtGPU(file):
@@ -92,32 +95,15 @@ def toTxtGPU(file):
 
     return binary_text
 
-def toTxtCPU(file, num_threads=8):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        # Read the image
-        img = cv2.imread(file)
-        if img is None:
-            raise FileNotFoundError(f"Could not read the image file: {file}")
 
-        # Convert the image to grayscale
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def toTxtCPU(binary):
+    # Convert the binary list to text using cpu
+    npArray = np.array(binary, dtype=np.int32)
+    return npArray
 
-        # Convert the grayscale image to binary (thresholding)
-        _, binary_img = cv2.threshold(gray_img, 128, 1, cv2.THRESH_BINARY)
-
-        # Flatten the binary image array
-        binary_pixels = binary_img.flatten()
-
-        # Convert the binary image to text
-        binary_text = ''.join(str(pixel) for pixel in binary_pixels)
-
-        return binary_text
 
 def findSequence(binary_list):
     # Convert the list to a string
-    if type(binary_list) is not str:
-        print('Binary list is not a string')
-        exit(1)
 
     # Define the sequence to find
     sequence = '1111111101'
@@ -147,32 +133,3 @@ def toText(binary_list):
     text = binascii.unhexlify(hex_data).decode()
 
     return text
-
-def toTxtIntegratedGraphics(imgFile, txtFile):
-    # Convert binary image to text using integrated graphics
-
-    if not os.path.exists(txtFile):
-        os.makedirs(os.path.dirname(txtFile), exist_ok=True)
-
-    # Read the image
-    img = cv2.imread(imgFile)
-    if img is None:
-        raise FileNotFoundError(f"Could not read the image file: {imgFile}")
-
-    # Convert the image to grayscale
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Convert the grayscale image to binary (thresholding)
-    _, binary_img = cv2.threshold(gray_img, 128, 1, cv2.THRESH_BINARY)
-
-    # Flatten the binary image array
-    binary_pixels = binary_img.flatten()
-
-    # Convert the binary image to text
-    text = ''.join(str(pixel) for pixel in binary_pixels)
-
-    # Write the text to a file
-    with open(txtFile, 'w') as f:
-        f.write(text)
-
-    return True

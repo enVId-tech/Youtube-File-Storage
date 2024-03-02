@@ -4,7 +4,7 @@ from image_funcs import toBin, fillRemainingElements, toImg
 def textToImage(BASE, FRAME_HEIGHT, FRAME_WIDTH, text_file, image_file, device='gpu'):
     try:
         # Convert the text file to binary
-        frame_pixels = toBin(BASE, text_file)
+        frame_pixels = toBin(BASE, text_file, 'r')
 
         # Fill the remaining elements of frame_pixels
         frame_pixels = fillRemainingElements(frame_pixels, FRAME_HEIGHT, FRAME_WIDTH)
