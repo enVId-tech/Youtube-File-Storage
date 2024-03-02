@@ -112,4 +112,5 @@ def toImgGPU(pixels):
     cuda.memcpy_dtoh(result, result_gpu)
 
     # Return the result
+    print(hahaIbrokeurthing)
     return result
