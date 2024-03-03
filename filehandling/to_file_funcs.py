@@ -95,6 +95,7 @@ def find_sequence(binary_list):
         print(e)
         return False
 
+
 def find_title(binary_list):
     try:
         if not isinstance(binary_list, str):
