@@ -7,6 +7,7 @@ import cv2
 # Define the maximum size of each binary fragment
 MAX_BINARY_SIZE = 1000000  # Adjust this value as needed
 
+
 def file_convert_to_video(height, width, input_file, output_file, frame_rate,
                           device):
     try:
@@ -43,6 +44,7 @@ def file_convert_to_video(height, width, input_file, output_file, frame_rate,
         print(e)
         return False
 
+
 def create_video_from_frames(frames,
                              output_file,
                              frame_height,
@@ -50,7 +52,7 @@ def create_video_from_frames(frames,
                              frame_rate=30):
     try:
         # Initialize VideoWriter
-        fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 codec
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # H.264 codec
         video_writer = cv2.VideoWriter(output_file,
                                        fourcc,
                                        frame_rate, (frame_width, frame_height),
@@ -92,17 +94,37 @@ def file_to_binary_fragments(file_path):
         print(f'Number of fragments: {len(fragments)}')
 
         return fragments
-        
 
 
-def cpu_binary_to_image(fragments):
-    # Using multiple threads to convert the pixels to an image using distributed computing
-    with ThreadPoolExecutor() as executor:
-        binary_string = ''.join(
-            map(lambda x: bin(int.from_bytes(x, byteorder='big'))[2:],
-                fragments))
-        return np.array(list(executor.map(int, binary_string)), dtype=np.uint8)
+def convert_binary_to_grayscale(img, start_idx, end_idx):
+    for i in range(start_idx, end_idx):
+        img[i] = img[i] * 255
 
+
+def cpu_binary_to_image(fragments, num_threads=8):
+    import threading
+
+    binary_string = ''.join(
+        map(lambda x: bin(int.from_bytes(x, byteorder='big'))[2:], fragments))
+    binary_array = np.array(list(map(int, binary_string)), dtype=np.uint8)
+    image_array = binary_array.astype(np.uint8)
+
+    block_size = len(image_array) // num_threads
+
+    threads = []
+    start_idx = 0
+    for i in range(num_threads):
+        end_idx = min(start_idx + block_size, len(image_array))
+        thread = threading.Thread(target=convert_binary_to_grayscale,
+                                  args=(image_array, start_idx, end_idx))
+        threads.append(thread)
+        thread.start()
+        start_idx = end_idx
+
+    for thread in threads:
+        thread.join()
+
+    return image_array
 
 # MUST BE RUN ON A GPU-ENABLED MACHINE
 # This function uses CUDA to convert the binary array to an image
