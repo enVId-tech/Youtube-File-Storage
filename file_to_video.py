@@ -11,8 +11,8 @@ FRAME_RATE = 60
 
 def main():
     # Convert the text file to an image
-    txtToImg = file_convert_to_video(FRAME_720P[0], FRAME_720P[1],
-                                     './input_files/text.txt',
+    txtToImg = file_convert_to_video(FRAME_1080P[0], FRAME_1080P[1],
+                                     './input_files/amulet_app.exe',
                                      'output_files/mainvideo.mp4', FRAME_RATE,
                                      DEVICE)
 
