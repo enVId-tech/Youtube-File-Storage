@@ -57,22 +57,8 @@ def create_video_from_frames(frames,
                                        isColor=False)
 
         # Write frames to video
-        for frame in frames:
-            print(f"Writing frame {frames.index(frame) + 1} to video")
-            # Convert pixel array to grayscale image
-            # Ensure frame values are only values 0 or 255
-            print(f"Frame first 100 values: {frame[0:100]}")
-
-            frame = np.where(frame > 0, 255, 0)
-
-            frame = frame.astype(np.uint8)
-
-            print(f"Frame Length: {len(frame)}")
-
-            # Reshape the frame to match the frame height and width
-            grayscale_frame = frame.reshape(frame_height, frame_width)
-
-            video_writer.write(grayscale_frame)
+        for i in range(len(frames)):
+            video_writer.write(frames[i].reshape(frame_height, frame_width))
 
         # Release resources
         video_writer.release()
