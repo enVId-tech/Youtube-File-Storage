@@ -8,9 +8,12 @@ import cv2
 MAX_BINARY_SIZE = 1000000  # Adjust this value as needed
 
 
-def file_convert_to_video(height, width, input_file, output_file, frame_rate,
+def file_convert_to_video(frame, input_file, output_file, frame_rate,
                           device):
     try:
+        height = frame[0]
+        width = frame[1]
+        
         sys.set_int_max_str_digits(100000000)
         binary_fragments = file_to_binary_fragments(input_file)
 

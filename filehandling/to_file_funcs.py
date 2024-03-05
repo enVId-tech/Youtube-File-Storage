@@ -8,7 +8,7 @@ def video_convert_to_file(video_path, device='cpu'):
     try:
         binary_list = []
 
-        # Determine the conversion function based on the device
+        # Read the video to binary
         if device == 'gpu':
             binary_list = gpu_read_video_to_binary(video_path)
         else:
