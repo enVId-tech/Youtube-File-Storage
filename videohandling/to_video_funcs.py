@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 import cv2
 
@@ -22,7 +21,7 @@ def file_convert_to_video(frame, input_file, output_file, frame_rate,
         else:
             img = cpu_binary_to_image(binary_fragments)
 
-        print(f'Image shape: {img[0:100]}')
+        print(f'Frame Sample: {img[0:100]}')
 
         frames = handle_multiple_frames(img, height, width)
 

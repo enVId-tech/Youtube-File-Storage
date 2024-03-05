@@ -15,16 +15,16 @@ def video_convert_to_file(video_path, device='cpu'):
             binary_list = cpu_read_image_to_binary(video_path)
 
         # Convert the 2D numpy array to a 1D string
-        binary_list = ''.join(binary_list.flatten().astype(str))
+        binary_list = ''.join(map(str, binary_list))
 
         # Shrink the binary list
         shrinked = find_sequence(binary_list)
         title = find_title(binary_list)
 
+        print(f"The title is: {title}")
+
         if not shrinked or not title:
             return False
-
-        title = title.decode('utf-8')
 
         # Write the binary list to a file
         with open(title, 'wb') as file:
@@ -45,35 +45,47 @@ def cpu_read_image_to_binary(image_path):
     # Convert the grayscale image to binary (thresholding)
     _, binary_img = cv2.threshold(img, 128, 1, cv2.THRESH_BINARY)
 
-    return binary_img
+    # Flatten the 2D array to a 1D array and convert it to a string
+    binary_str = ''.join(map(str, binary_img.flatten()))
+
+    return binary_str
 
 
-def gpu_read_video_to_binary(image_path):
-    import cv2
-    import cupy as cp
+def gpu_read_video_to_binary(video_path):
+    try:
+        # Read the video using gpu
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise FileNotFoundError(
+                f"Could not read the video file: {video_path}")
 
-    # Read the video
-    video = cv2.VideoCapture(image_path)
-    if not video.isOpened():
-        raise FileNotFoundError(f"Could not read the video file: {image_path}")
+        # Read the video to binary
+        binary_list = []
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-    # Read the video to binary
-    binary_list = []
-    while True:
-        ret, frame = video.read()
-        if not ret:
-            break
-        frame_gpu = cp.asarray(frame)  # Move the frame to GPU
-        gray_gpu = cp.dot(frame_gpu[..., :3],
-                          [0.299, 0.587, 0.114])  # Convert to grayscale on GPU
-        _, binary_img_gpu = cp.cuda.cutensor.threshold(
-            gray_gpu, 128, 1,
-            cp.cuda.cutensor.THRESH_BINARY)  # Apply threshold on GPU
-        binary_list.append(binary_img_gpu.get(
-        ))  # Move the binary image back to CPU and append to the list
-    video.release()
+            # Convert the frame to grayscale
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    return binary_list
+            # Convert the grayscale image to binary (thresholding)
+            _, binary_img = cv2.threshold(gray, 128, 1, cv2.THRESH_BINARY)
+
+            # Flatten the 2D array to a 1D array and convert it to a string
+            binary_str = ''.join(map(str, binary_img.flatten()))
+
+            # Append the binary string to the list
+            binary_list.append(binary_str)
+
+        # Release resources
+        cap.release()
+        cv2.destroyAllWindows()
+
+        return binary_list
+    except Exception as e:
+        print(e)
+        return False
 
 
 def find_sequence(binary_list):
@@ -82,15 +94,21 @@ def find_sequence(binary_list):
             raise TypeError('The binary list must be a string')
 
         # Define the sequence to find
-        endOfBin = bytes([0, 0, 0, 0, 0, 0, 0, 1, 0])
+        endOfBin = "000000010"
+
+        # Convert endOfBin to a string
+        endOfBin_str = ''.join(map(str, endOfBin))
+        print(f"Finding {endOfBin} in {binary_list}")
 
         # Find the sequence
-        sequence = binary_list.find(endOfBin)
+        sequence = binary_list.find(endOfBin_str)
         if sequence == -1:
             raise ValueError('The sequence was not found in the binary list')
 
-        # Return the sequence
-        return binary_list[:sequence]
+        print(f"The length of the binary list is: {len(binary_list[:sequence])}")
+
+        # Return the shrinked binary list
+        return binary_list[sequence:]
     except Exception as e:
         print(e)
         return False
@@ -102,15 +120,24 @@ def find_title(binary_list):
             raise TypeError('The binary list must be a string')
 
         # Define the sequence to find
-        endOfBin = bytes([0, 0, 0, 0, 0, 0, 1, 0, 0])
+        endOfBin = "000000100"
 
         # Find the sequence
         sequence = binary_list.find(endOfBin)
         if sequence == -1:
             raise ValueError('The sequence was not found in the binary list')
 
-        # Return the title
-        return binary_list[:sequence]
+        # Get the binary title
+        binary_title = binary_list[:sequence]
+        print(f"The binary title is: {binary_title}")
+        
+        exit(0)
+        # Convert the binary title to a text string
+        title = ''.join(
+            chr(int(binary_title[i:i + 8], 2))
+            for i in range(0, len(binary_title), 8))
+
+        return title
     except Exception as e:
         print(e)
         return False

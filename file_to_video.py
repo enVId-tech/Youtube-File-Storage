@@ -10,7 +10,7 @@ FRAME = {
     '144p': [144, 256]
 }
 
-DEVICE = 'cpu'
+DEVICE = 'gpu'
 FRAME_RATE = 60
 
 def main():

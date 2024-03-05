@@ -1,6 +1,6 @@
 from filehandling.to_file_funcs import video_convert_to_file
 
-DEVICE = 'cpu'
+DEVICE = 'gpu'
 
 def main():
     # Convert the video to a text file
