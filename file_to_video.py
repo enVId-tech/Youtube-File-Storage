@@ -13,18 +13,28 @@ FRAME = {
 DEVICE = 'gpu'
 FRAME_RATE = 60
 
+INPUT_FILE = 'comparison_text.txt'
+OUTPUT_VIDEO = 'outputvideo.mp4'
+
+
 def main():
     # Convert the text file to an image
     txtToImg = file_convert_to_video(FRAME['1080p'],
-                                     './input_files/text.txt',
-                                     'output_files/mainvideo.mp4', FRAME_RATE,
-                                     DEVICE)
+                                     f'./input_files/{INPUT_FILE}',
+                                     f'output_files/{OUTPUT_VIDEO}',
+                                     FRAME_RATE, DEVICE)
 
     if txtToImg:
-        print('Text file converted to image successfully')
+        print(
+            f'{INPUT_FILE.split(".")[-1].upper()} file converted to {OUTPUT_VIDEO.split(".")[-1].upper()} successfully.'
+        )
+        exit(0)
     else:
-        print('Text file conversion to image failed')
-    exit(0)
+        print(
+            f'{INPUT_FILE.split(".")[-1].upper()} file conversion to {OUTPUT_VIDEO.split(".")[-1].upper()} failed.'
+        )
+        exit(1)
+
 
 if __name__ == "__main__":
     main()
