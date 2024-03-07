@@ -10,10 +10,10 @@ FRAME = {
     '144p': [144, 256]
 }
 
-DEVICE = 'cpu'
+DEVICE = 'gpu'
 FRAME_RATE = 60
 
-INPUT_FILE = 'bruh.mp4'
+INPUT_FILE = 'comparison_text.txt'
 OUTPUT_VIDEO = 'outputvideo.mp4'
 
 

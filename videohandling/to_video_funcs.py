@@ -13,20 +13,19 @@ MAX_MEMORY = 2 * 10**9  # Memory limit in bytes
 MAX_THREADS = 8  # Maximum number of threads to use
 
 
-def file_convert_to_video(frame, input_file, output_file, frame_rate,
-                          device):
+def file_convert_to_video(frame, input_file, output_file, frame_rate, device):
     try:
         height = frame[0]
         width = frame[1]
 
-
         sys.set_int_max_str_digits(100000000)
-        binary_fragments = file_to_binary_fragments(input_file)
+        binary_fragments = file_to_binary_bits(input_file)
 
         if device == 'gpu':
-            img = gpu_binary_to_image(binary_fragments, MAX_MEMORY)
+            img = gpu_binary_to_image(binary_fragments)
         else:
-            img = cpu_binary_to_image(binary_fragments, MAX_MEMORY, MAX_THREADS)
+            img = cpu_binary_to_image(binary_fragments, MAX_MEMORY,
+                                      MAX_THREADS)
 
         print(f'Frame Sample: {img[0:100]}')
 
@@ -90,20 +89,16 @@ def handle_multiple_frames(pixel_array, frame_height, frame_width):
     ]
 
 
-def file_to_binary_fragments(file_path):
+def file_to_binary_bits(file_path, chunk_size=8192):
+    binary_bits = ""
     with open(file_path, 'rb') as file:
-        binary_string = file.read()
-        fragments = []
-
-        # Split binary string into fragments
-        for i in range(0, len(binary_string), MAX_BINARY_SIZE):
-            fragment = binary_string[i:i + MAX_BINARY_SIZE]
-            fragments.append(fragment)
-
-        print(f'Number of fragments: {len(fragments)}')
-
-        return fragments
-
+        while True:
+            chunk = file.read(chunk_size)
+            if not chunk:
+                break
+            binary_bits += ''.join(
+                format(x, '08b') for x in bytearray(chunk))
+    return binary_bits
 
 def convert_binary_to_grayscale(img, start_idx, end_idx):
     for i in range(start_idx, end_idx):
@@ -130,77 +125,73 @@ def cpu_binary_to_image(fragments, num_threads=8):
         print(e)
         return None
 
+
 # MUST BE RUN ON A GPU-ENABLED MACHINE
 # This function uses CUDA to convert the binary array to an image
 # Note: This function MUST get a binary array as input
-def gpu_binary_to_image(fragments, max_memory=1000000):
-    try:
-        # Import CUDA and create the kernel function
-        from pycuda import driver as drv
-        from pycuda.compiler import SourceModule
-        import pycuda.autoinit
+def gpu_binary_to_image(binary_fragments):
+    import pycuda.autoinit
+    import pycuda.driver as cuda
+    from pycuda.compiler import SourceModule
+    # Concatenate binary fragments
+    binary_data = b''.join(binary_fragments)
 
-        mod = SourceModule("""
-        __global__ void convert_binary_to_grayscale(unsigned char *img, int size)
+    # Create a PyCuda context
+    context = cuda.Device(0).make_context()
+
+    # Convert the binary data to a NumPy array
+    binary_array = np.frombuffer(binary_data, dtype=np.uint8)
+
+    # Allocate device memory for input data
+    input_data = cuda.mem_alloc(binary_array.nbytes)
+    cuda.memcpy_htod(input_data, binary_array)
+
+    # Allocate device memory for output array
+    output_size = len(binary_array)
+    output_data = cuda.mem_alloc(output_size)
+
+    # Compile the CUDA kernel
+    module = SourceModule("""
+        __global__ void binary_to_grayscale(const unsigned char *input, unsigned char *output, int size)
         {
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
-            for (int i = idx; i < size; i += blockDim.x * gridDim.x)
+            if (idx < size)
             {
-                img[i] = img[i] * 255;
+                output[idx] = input[idx] == 1 ? 255 : 0;
             }
         }
-        """)
+    """)
 
-        binary_string = ''.join(
-            map(lambda x: bin(int.from_bytes(x, byteorder='big'))[2:], fragments))
-        binary_array = np.array(list(map(int, binary_string)), dtype=np.uint8)
-        image_array = binary_array.astype(np.uint8)
+    # Get the kernel function
+    binary_to_grayscale_kernel = module.get_function("binary_to_grayscale")
 
-        block_size = 256
-        grid_size = (image_array.size + block_size - 1) // block_size
+    # Prepare the kernel launch
+    block_size = 256
+    grid_size = (output_size + block_size - 1) // block_size
 
-        func = mod.get_function("convert_binary_to_grayscale")
+    # Launch the kernel
+    binary_to_grayscale_kernel(input_data,
+                               output_data,
+                               np.int32(output_size),
+                               block=(block_size, 1, 1),
+                               grid=(grid_size, 1))
 
-        # Allocate memory for the GPU data
-        image_array_gpu = drv.mem_alloc(image_array.nbytes)
-        drv.memcpy_htod(image_array_gpu, image_array)
+    # Copy the result back to the host
+    output_array = np.empty(output_size, dtype=np.uint8)
+    cuda.memcpy_dtoh(output_array, output_data)
 
-        # Create CUDA stream
-        stream = drv.Stream()
+    # Clean up the CUDA context
+    if context is not None:
+        context.pop()
 
-        # Event for synchronization
-        event = drv.Event()
+    return output_array
 
-        processed_size = 0
-        # Check memory usage
-        mem_info = psutil.virtual_memory()
 
-        while processed_size < image_array.size:
-            original_mem_state = mem_info.available - mem_info.used
-            if original_mem_state < max_memory:
-                # Execute kernel
-                func(image_array_gpu,
-                    np.int32(image_array.size),
-                    block=(block_size, 1, 1),
-                    grid=(grid_size, 1),
-                    stream=stream)
 
-                # Synchronize and wait for the kernel to finish
-                event.record()
-                event.synchronize()
-
-                # Copy the result back to host
-                drv.memcpy_dtoh(image_array, image_array_gpu)
-
-                # Update processed size
-                processed_size = image_array.size
-            else:
-                time.sleep(1)
-
-            return image_array
-    except Exception as e:
-        print(e)
-        return None
+# Example usage
+binary_fragments = [b'\x01\x02\x03', b'\xFF\x00\xFF', b'\x80\x7F\x81']
+grayscale_array = gpu_binary_to_image(binary_fragments)
+print(grayscale_array)
 
 
 def fill_remaining_elements(pixelsArr, frame_height, frame_width):
