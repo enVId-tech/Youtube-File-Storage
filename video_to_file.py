@@ -1,6 +1,6 @@
 from filehandling.to_file_funcs import video_convert_to_file
 
-DEVICE = 'gpu'
+DEVICE = 'cpu'
 
 INPUT_FILE = 'mainvideo.mp4'
 
