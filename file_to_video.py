@@ -1,4 +1,5 @@
 from videohandling.to_video_funcs import file_convert_to_video
+import math
 
 # Frame dimensions (height, width)
 FRAME = {
@@ -10,12 +11,11 @@ FRAME = {
     '144p': [144, 256]
 }
 
-DEVICE = 'gpu'
+DEVICE = 'cpu'
 FRAME_RATE = 60
 
-INPUT_FILE = 'comparison_text.txt'
+INPUT_FILE = 'bruh.mp4'
 OUTPUT_VIDEO = 'outputvideo.mp4'
-
 
 def main():
     # Convert the text file to an image

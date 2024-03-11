@@ -3,13 +3,16 @@ import numpy as np
 import hashlib
 import os
 
-FRAME_HEIGHT = 1080
-FRAME_WIDTH = 1920
+DEVICE = 'cpu'
 FRAME_RATE = 60
-INPUT_PATH = 'input.txt'
-OUTPUT_PATH = 'outputvideo.mp4'
-OUTPUT_FILE = 'output.txt'
-
+FRAME = {
+    '4k': [2160, 4096],
+    '1440p': [1440, 2560],
+    '1080p': [1080, 1920],
+    '720p': [720, 1280],
+    '480p': [480, 854],
+    '144p': [144, 256]
+}
 
 def compute_checksum(data):
     try:
