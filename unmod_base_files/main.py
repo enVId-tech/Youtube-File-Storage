@@ -13,6 +13,10 @@ FRAME = {
     '480p': [480, 854],
     '144p': [144, 256]
 }
+INPUT_PATH = 'input.txt'
+OUTPUT_PATH = 'output.mp4'
+OUTPUT_FILE = 'output.txt'
+FRAME_HEIGHT, FRAME_WIDTH = FRAME['4k']
 
 def compute_checksum(data):
     try:
@@ -52,15 +56,21 @@ def hamming_decode(data):
         # 7-bit data
         d = np.array(data, dtype=np.uint8)
 
-        # Syndrome bits
-        s1 = d[0] ^ d[2] ^ d[4] ^ d[6]
-        s2 = d[1] ^ d[2] ^ d[5] ^ d[6]
-        s3 = d[3] ^ d[4] ^ d[5] ^ d[6]
+        # Parity bits
+        p1 = d[0]
+        p2 = d[1]
+        p3 = d[3]
 
         # Error correction
-        e = s1 * 1 + s2 * 2 + s3 * 4
-        if e != 0:
-            d[e - 1] = 1 - d[e - 1]
+        e1 = p1 ^ d[2] ^ d[4] ^ d[6]
+        e2 = p2 ^ d[2] ^ d[5] ^ d[6]
+        e3 = p3 ^ d[4] ^ d[5] ^ d[6]
+
+        # Error detection
+        error = e1 * 4 + e2 * 2 + e3
+
+        if error != 0:
+            d[error - 1] = 1 - d[error - 1]
 
         # Decoded data
         d_decoded = np.array([d[2], d[4], d[5], d[6]], dtype=np.uint8)
@@ -71,18 +81,6 @@ def hamming_decode(data):
 
 def calculate_checksum(data):
     return np.sum(data)
-
-
-def add_parity_bits(data, parity_type='even'):
-    if parity_type == 'even':
-        parity_bit = np.sum(data) % 2
-    elif parity_type == 'odd':
-        parity_bit = 1 - (np.sum(data) % 2)
-    else:
-        raise ValueError("Invalid parity type. Use 'even' or 'odd'.")
-    data_with_parity = np.append(data, parity_bit)
-    return data_with_parity
-
 
 def remove_trailing_zeros(array, padding_length):
     array_length = len(array)
@@ -162,7 +160,22 @@ def undo_main():
             print("Error: No frames were read from the video.")
             return False
 
-        bit_frames = np.concatenate(bit_frames)
+        # Combine all bit frames into a single array
+        bit_frames = np.concatenate(bit_frames).flatten()
+
+        # Remove trailing zeros
+        bit_frames = remove_trailing_zeros(bit_frames, FRAME_HEIGHT * FRAME_WIDTH)
+
+
+        if bit_frames.size % 7 != 0:
+            while bit_frames.size % 7 != 0:
+                bit_frames = np.append(bit_frames, 0)
+
+            if bit_frames.size % 7 != 0:
+                print("Error: Bit frames size is not a multiple of 7.")
+                return False
+
+        print(f"Length of bit frames: {len(bit_frames)}")
 
         # Hamming decode each 4-bit block
         bit_frames = np.array([
@@ -170,26 +183,14 @@ def undo_main():
             for i in range(0, len(bit_frames), 7)
         ]).flatten()
 
-        parity_bit = bit_frames[-1]
-        bit_frames = bit_frames[:-1]
-        if not np.any(np.sum(bit_frames) % 2 != parity_bit):
-            print("Error: Parity check failed!")
-            return False
-
-        for checksum in checksums:
-            calculated_checksum = calculate_checksum(bit_frames)
-            if np.all(calculated_checksum != checksum):
-                print("Error: Checksum mismatch detected!")
-                return False
-
-        bit_frames = bit_frames.tobytes()
+        # Convert bit frames to bytes
+        bit_frames = np.packbits(bit_frames)
 
         with open(f'./output_files/{OUTPUT_FILE}', 'wb') as file:
             file.write(bit_frames)
 
         print("File saved successfully!")
         return True
-
     except Exception as e:
         print(f"Error in undo_main(): {e}")
         return False
