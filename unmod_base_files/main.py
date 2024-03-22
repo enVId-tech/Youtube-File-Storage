@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-import hashlib
-import os
+from checksum import compute_checksum, hamming_encode, hamming_decode, calculate_checksum
 
 DEVICE = 'cpu'
 FRAME_RATE = 60
@@ -16,78 +15,24 @@ FRAME = {
 INPUT_PATH = 'input.txt'
 OUTPUT_PATH = 'output.mp4'
 OUTPUT_FILE = 'output.txt'
-FRAME_HEIGHT, FRAME_WIDTH = FRAME['4k']
-
-def compute_checksum(data):
-    try:
-        if os.path.exists(data):
-            with open(data, 'rb') as file:
-                file_data = file.read()
-                checksum = hashlib.md5(file_data).hexdigest()
-                return checksum
-        else:
-            print(f"Error in compute_checksum: File '{data}' does not exist.")
-            return None
-    except Exception as e:
-        print(f"Error in compute_checksum: {e}")
-        return None
-
-
-def hamming_encode(data):
-    try:
-        # 4-bit data
-        d = np.array(data, dtype=np.uint8)
-
-        # Parity bits
-        p1 = d[0] ^ d[1] ^ d[3]
-        p2 = d[0] ^ d[2] ^ d[3]
-        p3 = d[1] ^ d[2] ^ d[3]
-
-        # Encoded data
-        d_encoded = np.array([p1, p2, d[0], p3, d[1], d[2], d[3]], dtype=np.uint8)
-        return d_encoded
-    except Exception as e:
-        print(f"Error in hamming_encode: {e}")
-        exit(1)
-
-
-def hamming_decode(data):
-    try:
-        # 7-bit data
-        d = np.array(data, dtype=np.uint8)
-
-        # Parity bits
-        p1 = d[0]
-        p2 = d[1]
-        p3 = d[3]
-
-        # Error correction
-        e1 = p1 ^ d[2] ^ d[4] ^ d[6]
-        e2 = p2 ^ d[2] ^ d[5] ^ d[6]
-        e3 = p3 ^ d[4] ^ d[5] ^ d[6]
-
-        # Error detection
-        error = e1 * 4 + e2 * 2 + e3
-
-        if error != 0:
-            d[error - 1] = 1 - d[error - 1]
-
-        # Decoded data
-        d_decoded = np.array([d[2], d[4], d[5], d[6]], dtype=np.uint8)
-        return d_decoded
-    except Exception as e:
-        print(f"Error in hamming_decode: {e}")
-        exit(1)
-
-def calculate_checksum(data):
-    return np.sum(data)
+FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
 
 def remove_trailing_zeros(array, padding_length):
-    array_length = len(array)
-    num_trailing_zeros = padding_length
-    trimmed_array = array[:array_length - num_trailing_zeros]
-    return trimmed_array
+    try:
+        if padding_length == 0:
+            return array
 
+        while padding_length > 0:
+            if array[-1] == 0:
+                array = array[:-1]
+                padding_length -= 1
+            else:
+                break
+
+        return array
+    except Exception as e:
+        print(f"Error in remove_trailing_zeros: {e}")
+        exit(1)
 
 def main():
     try:
@@ -97,37 +42,48 @@ def main():
 
         print(f"First 10 bytes of binary data: {binary_data[:10]}")
 
-        binary_data = np.array([
-            hamming_encode(binary_data[i:i + 4])
-            for i in range(0, len(binary_data), 4)
-        ]).flatten()
+        binary_data = hamming_encode(binary_data)
 
-        remainder = binary_data.size % (FRAME_HEIGHT * FRAME_WIDTH)
+        remainder = len(binary_data) % (FRAME_HEIGHT * FRAME_WIDTH)
         if remainder != 0:
-            padding_size = FRAME_HEIGHT * FRAME_WIDTH - remainder
-            binary_data = np.pad(binary_data, (0, padding_size),
-                                 mode='constant',
-                                 constant_values=0)
+            padding_length = (FRAME_HEIGHT * FRAME_WIDTH) - remainder
+            binary_data = np.append(binary_data, np.zeros(padding_length))
 
-        frames = binary_data.reshape(-1, FRAME_HEIGHT, FRAME_WIDTH) * 255
+        print(f"Length of binary data: {len(binary_data)}")
 
-        for i, frame in enumerate(frames):
-            cv2.imwrite(f'./output_files/frames/frame_{i}.png', frame)
+        # Split the binary data into frames
+        frames = np.array([
+            binary_data[i:i + (FRAME_HEIGHT * FRAME_WIDTH)]
+            for i in range(0, len(binary_data), FRAME_HEIGHT * FRAME_WIDTH)
+        ])
 
-        video_writer = cv2.VideoWriter(f'./output_files/{OUTPUT_PATH}',
-                                       cv2.VideoWriter_fourcc(*'mp4v'),
-                                       FRAME_RATE, (FRAME_WIDTH, FRAME_HEIGHT),
-                                       isColor=False)
+        print(f"Amount of frames: {len(frames)}")
+
+        # Convert the frames to 8-bit grayscale images
+        frames = np.array([
+            frame.reshape(FRAME_HEIGHT, FRAME_WIDTH).astype(np.uint8)
+            for frame in frames
+        ])
+
+        # Save the frames to a video file
+        video_writer = cv2.VideoWriter(
+            f'./output_files/{OUTPUT_PATH}',
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            FRAME_RATE,
+            (FRAME_WIDTH, FRAME_HEIGHT)
+        )
 
         for frame in frames:
-            video_writer.write(frame.astype(np.uint8))
+            frame = frame.astype(np.uint8)
+            frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            video_writer.write(frame)
 
         video_writer.release()
         print("Video saved successfully!")
         return True
     except Exception as e:
         print(f"Error in main(): {e}")
-        return False
+        exit(1)
 
 
 def undo_main():
@@ -149,8 +105,20 @@ def undo_main():
             if not ret:
                 break
 
+            if frame.shape[0] != FRAME_HEIGHT or frame.shape[1] != FRAME_WIDTH:
+                print(f"Error: Frame dimensions do not match ({frame.shape[0]}x{frame.shape[1]}).")
+                exit(1)
+
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            temp_bit_frames = np.where(gray_frame > 127, 1, 0)
+            temp_bit_frames = np.unpackbits(gray_frame.flatten())
+            if temp_bit_frames.size % 8 != 0:
+                print("Error: Bit frames size is not a multiple of 8.")
+                exit(1)
+
+            if not temp_bit_frames.size == FRAME_HEIGHT * FRAME_WIDTH:
+                print(f"Error: Frame size is not {FRAME_HEIGHT}x{FRAME_WIDTH}.")
+                exit(1)
+
             bit_frames.append(temp_bit_frames.astype(np.uint8))
 
             checksum = calculate_checksum(temp_bit_frames)
@@ -166,7 +134,6 @@ def undo_main():
         # Remove trailing zeros
         bit_frames = remove_trailing_zeros(bit_frames, FRAME_HEIGHT * FRAME_WIDTH)
 
-
         if bit_frames.size % 7 != 0:
             while bit_frames.size % 7 != 0:
                 bit_frames = np.append(bit_frames, 0)
@@ -176,6 +143,9 @@ def undo_main():
                 return False
 
         print(f"Length of bit frames: {len(bit_frames)}")
+        if (len(bit_frames) % 7) != 0:
+            print("Error: Bit frames length is not a multiple of 7.")
+            exit(1)
 
         # Hamming decode each 4-bit block
         bit_frames = np.array([
@@ -183,7 +153,9 @@ def undo_main():
             for i in range(0, len(bit_frames), 7)
         ]).flatten()
 
-        # Convert bit frames to bytes
+        print(f"Length of bit frames after decoding: {len(bit_frames)}")
+
+        # Save the bit frames to a file
         bit_frames = np.packbits(bit_frames)
 
         with open(f'./output_files/{OUTPUT_FILE}', 'wb') as file:
@@ -193,7 +165,7 @@ def undo_main():
         return True
     except Exception as e:
         print(f"Error in undo_main(): {e}")
-        return False
+        exit(1)
 
 
 if __name__ == "__main__":
