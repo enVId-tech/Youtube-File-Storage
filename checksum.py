@@ -2,6 +2,10 @@ import os
 import hashlib
 import numpy as np
 
+class HammingError(Exception):
+    print("Error in HammingError: {e}")
+    pass
+
 def compute_checksum(data):
     try:
         if isinstance(data, str) and os.path.exists(data):
@@ -18,9 +22,6 @@ def compute_checksum(data):
     except Exception as e:
         print(f"Error in compute_checksum: {e}")
         return None
-
-class HammingError(Exception):
-    pass
 
 def validate_data(data, length):
     if len(data) < length:
@@ -63,6 +64,23 @@ def hamming_decode(data):
         return d[[2, 4, 5, 6]]
     except Exception as e:
         raise HammingError(f"Error in hamming_decode: {e}")
-    
+
 def calculate_checksum(data):
     return np.sum(data)
+
+def remove_trailing_zeros(array, padding_length):
+    try:
+        if padding_length == 0:
+            return array
+
+        while padding_length > 0:
+            if array[-1] == 0:
+                array = array[:-1]
+                padding_length -= 1
+            else:
+                break
+
+        return array
+    except Exception as e:
+        print(f"Error in remove_trailing_zeros: {e}")
+        exit(1)
