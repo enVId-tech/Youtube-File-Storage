@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
-from checksum import hamming_encode
+# from hammingenc import hamming_encode as encode
+from ldpc import encode
 
 def encode_file():
     try:
@@ -14,18 +15,24 @@ def encode_file():
 
         print(f"2enc. Length of binary data: {len(binary_data)}")
 
-        binary_data = np.array([
-            hamming_encode(binary_data[i:i + 4])
-            for i in range(0, len(binary_data), 4)
-        ]).flatten()
+        # Encode the binary data
+        # binary_data = hamming_encode(binary_data)
+        binary_data = encode(binary_data)
+
+        # print(f"BINARY DATA: {binary_data}")
 
         print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
+
+        # Convert 1s and 0s to 255s and 0s
+        binary_data = np.where(binary_data == 1, 255, 0)
 
         remainder = len(binary_data) % (FRAME_HEIGHT * FRAME_WIDTH)
 
         if remainder != 0:
             padding_length = (FRAME_HEIGHT * FRAME_WIDTH) - remainder
             binary_data = np.append(binary_data, np.zeros(padding_length))
+
+        print(f"4enc. Length of binary data after padding: {len(binary_data)}")
 
         # Split the binary data into frames
         frames = np.array([
@@ -39,10 +46,12 @@ def encode_file():
             for frame in frames
         ])
 
+        print(f"5enc. Frames created successfully! Number of frames: {len(frames)}")
+
         # Save the frames to a video file
         video_writer = cv2.VideoWriter(
             f'./output_files/{OUTPUT_PATH}',
-            cv2.VideoWriter_fourcc(*'mp4v'),
+            cv2.VideoWriter_fourcc(*'H264'),
             FRAME_RATE,
             (FRAME_WIDTH, FRAME_HEIGHT)
         )

@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
-from checksum import hamming_decode, calculate_checksum, remove_trailing_zeros
+from checksum import remove_trailing_zeros
+# from hammingenc import hamming_decode as decode
+from ldpc import decode
 from constants import FRAME_HEIGHT, FRAME_WIDTH, OUTPUT_PATH, OUTPUT_FILE
 
 def decode_video():
@@ -12,9 +14,9 @@ def decode_video():
             return False
 
         bit_frames = []
-        checksums = []
+        numFrames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        while True:
+        for _ in range(numFrames):
             ret, frame = video.read()
             if not ret:
                 break
@@ -24,24 +26,27 @@ def decode_video():
                 exit(1)
 
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            temp_bit_frames = np.unpackbits(gray_frame.flatten())
+            temp_bit_frames = gray_frame.flatten()
 
             # Remove trailing zeros
             if temp_bit_frames.size % 8 != 0:
                 print("Error: Bit frames size is not a multiple of 8.")
                 exit(1)
 
-            bit_frames.append(temp_bit_frames.astype(np.uint8))
-
-            checksum = calculate_checksum(temp_bit_frames)
-            checksums.append(checksum)
+            bit_frames.append(temp_bit_frames)
 
         if len(bit_frames) == 0:
             print("Error: No frames were read from the video.")
-            return False
+            exit(1)
+
+        print(f"1dec. Number of frames read: {len(bit_frames)}")
 
         # Combine all bit frames into a single array
         bit_frames = np.concatenate(bit_frames).flatten()
+
+        if not len(bit_frames) == (FRAME_HEIGHT * FRAME_WIDTH * numFrames):
+            print(f"Error: Number of bits read ({len(bit_frames)}) does not match the expected number ({FRAME_HEIGHT * FRAME_WIDTH * numFrames}).")
+            exit(1)
 
         # Remove trailing zeros
         bit_frames = remove_trailing_zeros(bit_frames, FRAME_HEIGHT * FRAME_WIDTH)
@@ -52,18 +57,17 @@ def decode_video():
 
             if bit_frames.size % 7 != 0:
                 print("Error: Bit frames size is not a multiple of 7.")
-                return False
+                exit(1)
+
+        print(f"2dec. Length of bit frames: {len(bit_frames)}")
 
         if (len(bit_frames) % 7) != 0:
             print("Error: Bit frames length is not a multiple of 7.")
             exit(1)
 
-        # Hamming decode each 4-bit block
-        bit_frames = np.array([
-            hamming_decode(bit_frames[i:i + 7])
-            for i in range(0, len(bit_frames), 7)
-        ]).flatten()
-
+        # Decode the bit frames using Hamming code
+        bit_frames = decode(bit_frames)
+        
         # Save the bit frames to a file
         bit_frames = np.packbits(bit_frames)
 

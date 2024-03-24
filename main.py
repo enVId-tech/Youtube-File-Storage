@@ -1,6 +1,6 @@
 import cv2
-import numpy as np
-from checksum import compute_checksum, hamming_encode, hamming_decode, calculate_checksum
+# import numpy as np
+from checksum import compute_checksum
 from constants import INPUT_PATH, OUTPUT_FILE
 from decode import decode_video
 from encode import encode_file
