@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
-from checksum import remove_trailing_zeros
-# from hammingenc import hamming_decode as decode
-from ldpc import decode
+import ecc.hamming_codec as hamming
 from constants import FRAME_HEIGHT, FRAME_WIDTH, OUTPUT_PATH, OUTPUT_FILE
 
 def decode_video():
@@ -48,28 +46,41 @@ def decode_video():
             print(f"Error: Number of bits read ({len(bit_frames)}) does not match the expected number ({FRAME_HEIGHT * FRAME_WIDTH * numFrames}).")
             exit(1)
 
-        # Remove trailing zeros
-        bit_frames = remove_trailing_zeros(bit_frames, FRAME_HEIGHT * FRAME_WIDTH)
+        print(f"2dec. Length of bit frames: {len(bit_frames)}")
+        
+        
+        bit_frames = np.where(bit_frames > 127, 1, 0)
 
-        if bit_frames.size % 7 != 0:
-            while bit_frames.size % 7 != 0:
+        # Remove trailing zeros
+        bit_frames = np.trim_zeros(bit_frames, 'b')
+
+        if bit_frames.size % 12 != 0:
+            while bit_frames.size % 12 != 0:
                 bit_frames = np.append(bit_frames, 0)
 
-            if bit_frames.size % 7 != 0:
-                print("Error: Bit frames size is not a multiple of 7.")
-                exit(1)
-
-        print(f"2dec. Length of bit frames: {len(bit_frames)}")
-
-        if (len(bit_frames) % 7) != 0:
-            print("Error: Bit frames length is not a multiple of 7.")
+        if bit_frames.size % 12 != 0:
+            print("Error: Bit frames size is not a multiple of 12.")
             exit(1)
 
-        # Decode the bit frames using Hamming code
-        bit_frames = decode(bit_frames)
+        # Convert 255s and 0s to 1s and 0s
+        print(f"3dec. Length of bit frames after conversion: {len(bit_frames)}")
+
+        # Decode the bit frames (Bits are already in 8-bit format, so no need to split them into 8-bit chunks)
+        bit_frames = np.array([
+            hamming.decode(bit_frames[i:i + 12])
+            for i in range(0, len(bit_frames), 12)
+        ])
+
+        bit_frames = np.concatenate([np.array(list(s), dtype=int) for s in bit_frames])
         
+        print(bit_frames)
+        # Convert binary strings to integers
+        print(f"4dec. Length of bit frames after decoding: {len(bit_frames)}")
+
         # Save the bit frames to a file
         bit_frames = np.packbits(bit_frames)
+
+        print(f"5dec. Length of bit frames after packing: {len(bit_frames)}")
 
         with open(f'./output_files/{OUTPUT_FILE}', 'wb') as file:
             file.write(bit_frames)
