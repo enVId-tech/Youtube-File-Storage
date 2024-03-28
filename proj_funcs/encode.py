@@ -1,17 +1,9 @@
 import cv2
 import numpy as np
 import ecc.hamming_funcs as hamming
-# import ecc.hamming_codec as main_hamming
-import ecc.optimized_funcs as opt_hamming
 import time
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
 import concurrent.futures
-
-def encode_chunk(chunk):
-    # Starts at 3 parity bits for 4 data bits
-    # Increases by 1 parity bit for every next doubling of data bits\
-    # Max should be 1024 data bits and 11 parity bits
-    return np.array([opt_hamming.encode_parallel(chunk[i:i+8]) for i in range(0, len(chunk), 8)])
 
 def encode_file():
     try:
@@ -26,10 +18,12 @@ def encode_file():
         print(f"2enc. Length of binary data: {len(binary_data)}")
 
         # Encode the binary data using Hamming(8, 4) code
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            encoded_chunks = executor.map(encode_chunk, np.array_split(binary_data, len(binary_data)//(8*FRAME_HEIGHT*FRAME_WIDTH)))
+        binary_data = np.array([
+            hamming.encode(binary_data[i:i + 8])
+            for i in range(0, len(binary_data), 8)
+        ])
 
-        binary_data = np.concatenate([np.array(list(s), dtype=int) for chunk in encoded_chunks for s in chunk])
+        binary_data = np.concatenate([np.array(list(s), dtype=int) for s in binary_data])
 
         print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
 
@@ -78,4 +72,4 @@ def encode_file():
     except Exception as e:
         print(f"Error in main(): {e}")
         print(f"Runtime error occurred at ${time.time() - timer} seconds")
-        return False
+        exit(1)
