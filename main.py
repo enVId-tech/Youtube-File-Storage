@@ -6,12 +6,20 @@ from constants import INPUT_PATH, OUTPUT_FILE
 def main():
     try:
         print("Running encode...")
-        encode_file()
+        enc = encode_file()
 
-        print("\n\n\n----------------------------------------------\n\n\n")
+        print("\n\n----------------------------------------------\n\n")
+
+        if not enc:
+            print("Encode failed!")
+            exit(1)
 
         print("Running decode...")
         decode_video()
+
+        if not enc:
+            print("Decode failed!")
+            exit(1)
 
         input_checksum = compute_checksum(f'./input_files/{INPUT_PATH}')
         output_checksum = compute_checksum(f'./output_files/{OUTPUT_FILE}')

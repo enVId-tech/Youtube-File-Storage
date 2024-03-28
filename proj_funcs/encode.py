@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import ecc.hamming_codec as hamming
+import ecc.hamming_funcs as hamming
 import time
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
 
