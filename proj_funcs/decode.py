@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import time
-import ecc.hamming_codec as hamming
+import ecc.hamming_funcs as hamming
 from constants import FRAME_HEIGHT, FRAME_WIDTH, OUTPUT_PATH, OUTPUT_FILE
 
 def decode_video():
@@ -90,4 +90,4 @@ def decode_video():
     except Exception as e:
         print(f"Error in undo_main(): {e}")
         print(f"Runtime error occurred at {time.time() - timer} seconds.")
-        exit(1)
+        return False
