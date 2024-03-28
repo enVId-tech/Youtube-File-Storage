@@ -90,4 +90,4 @@ def decode_video():
     except Exception as e:
         print(f"Error in undo_main(): {e}")
         print(f"Runtime error occurred at {time.time() - timer} seconds.")
-        exit(1)
+        return False
