@@ -1,6 +1,7 @@
-from decode import decode_video
-from encode import encode_file
-
+from proj_funcs.decode import decode_video
+from proj_funcs.encode import encode_file
+from proj_funcs.misc import compute_checksum
+from constants import INPUT_PATH, OUTPUT_FILE
 
 def main():
     try:
@@ -12,8 +13,8 @@ def main():
         print("Running decode...")
         decode_video()
 
-        input_checksum = 0 # compute_checksum(f'./input_files/{INPUT_PATH}')
-        output_checksum = 0 # compute_checksum(f'./output_files/{OUTPUT_FILE}')
+        input_checksum = compute_checksum(f'./input_files/{INPUT_PATH}')
+        output_checksum = compute_checksum(f'./output_files/{OUTPUT_FILE}')
 
         if input_checksum and output_checksum:
             if input_checksum == output_checksum:

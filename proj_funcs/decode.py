@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
+import time
 import ecc.hamming_codec as hamming
 from constants import FRAME_HEIGHT, FRAME_WIDTH, OUTPUT_PATH, OUTPUT_FILE
 
 def decode_video():
     try:
+        timer = time.time()
         video = cv2.VideoCapture(f'./output_files/{OUTPUT_PATH}')
 
         if not video.isOpened():
@@ -83,8 +85,9 @@ def decode_video():
         with open(f'./output_files/{OUTPUT_FILE}', 'wb') as file:
             file.write(bit_frames)
 
-        print("File saved successfully!")
+        print(f"6dec. File saved successfully! Time taken: {time.time() - timer} seconds.")
         return True
     except Exception as e:
         print(f"Error in undo_main(): {e}")
+        print(f"Runtime error occurred at {time.time() - timer} seconds.")
         exit(1)

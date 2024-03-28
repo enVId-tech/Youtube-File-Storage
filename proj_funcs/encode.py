@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
 import ecc.hamming_codec as hamming
+import time
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
 
 def encode_file():
     try:
+        timer = time.time()
         with open(f'./input_files/{INPUT_PATH}', 'rb') as file:
             binary_data = np.fromfile(file, dtype=np.uint8)
 
@@ -64,8 +66,9 @@ def encode_file():
 
         video_writer.release()
 
-        print("Video saved successfully!")
+        print(f"6enc. Video file saved successfully! Time taken: {time.time() - timer} seconds")
         return True
     except Exception as e:
         print(f"Error in main(): {e}")
+        print(f"Runtime error occurred at ${time.time() - timer} seconds")
         exit(1)
