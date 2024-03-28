@@ -7,8 +7,6 @@ def encode_file():
     try:
         with open(f'./input_files/{INPUT_PATH}', 'rb') as file:
             binary_data = np.fromfile(file, dtype=np.uint8)
-        
-        print(binary_data)
 
         print("1enc. File Read Successfully!")
 
@@ -16,10 +14,13 @@ def encode_file():
 
         print(f"2enc. Length of binary data: {len(binary_data)}")
 
-        np.array([
+        # Encode the binary data using Hamming(8, 4) code
+        binary_data = np.array([
             hamming.encode(binary_data[i:i + 8])
             for i in range(0, len(binary_data), 8)
         ])
+
+        binary_data = np.concatenate([np.array(list(s), dtype=int) for s in binary_data])
 
         print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
 
@@ -51,7 +52,7 @@ def encode_file():
         # Save the frames to a video file
         video_writer = cv2.VideoWriter(
             f'./output_files/{OUTPUT_PATH}',
-            cv2.VideoWriter_fourcc(*'H264'),
+            cv2.VideoWriter_fourcc(*'mp4v'),
             FRAME_RATE,
             (FRAME_WIDTH, FRAME_HEIGHT)
         )
@@ -68,5 +69,3 @@ def encode_file():
     except Exception as e:
         print(f"Error in main(): {e}")
         exit(1)
-
-# Pass in array as numpy array

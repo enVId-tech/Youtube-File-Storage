@@ -48,7 +48,6 @@ def decode_video():
 
         print(f"2dec. Length of bit frames: {len(bit_frames)}")
         
-        
         bit_frames = np.where(bit_frames > 127, 1, 0)
 
         # Remove trailing zeros
@@ -72,8 +71,7 @@ def decode_video():
         ])
 
         bit_frames = np.concatenate([np.array(list(s), dtype=int) for s in bit_frames])
-        
-        print(bit_frames)
+
         # Convert binary strings to integers
         print(f"4dec. Length of bit frames after decoding: {len(bit_frames)}")
 

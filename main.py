@@ -7,6 +7,8 @@ def main():
         print("Running encode...")
         encode_file()
 
+        print("\n\n\n----------------------------------------------\n\n\n")
+
         print("Running decode...")
         decode_video()
 

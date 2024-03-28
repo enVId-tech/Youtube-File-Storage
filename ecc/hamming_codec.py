@@ -107,13 +107,14 @@ def removeRedundantBits(arr):
     return res[::-1]
 
 def encode(arr):
-    if type(arr) == np.ndarray:
-        arr = arr.tolist()
-    str_arr = ''.join([str(elem) for elem in arr])
-    m = len(str_arr)
-    r = calcRedundantBits(m)
-    arr = posRedundantBits(str_arr, r)
-    arr = calcParityBits(arr, r)
+	if type(arr) == np.ndarray:
+		arr = arr.tolist()
+	str_arr = ''.join([str(elem) for elem in arr])
+	m = len(str_arr)
+	r = calcRedundantBits(m)
+	arr = posRedundantBits(str_arr, r)
+	arr = calcParityBits(arr, r)
+	return arr
     
 def decode(arr):
 	if type(arr) == np.ndarray:
