@@ -1,5 +1,5 @@
 DEVICE = 'cpu'
-FRAME_RATE = 60
+FRAME_RATE = 30
 FRAME = {
     '4k': [2160, 4096],
     '1440p': [1440, 2560],
@@ -8,7 +8,9 @@ FRAME = {
     '480p': [480, 854],
     '144p': [144, 256]
 }
-INPUT_PATH = 'test100k.txt'
+# INPUT_PATH = 'test100k.txt'
+INPUT_PATH = 'test.zip'
 OUTPUT_PATH = 'output.mp4'
-OUTPUT_FILE = 'output.txt'
+# OUTPUT_FILE = 'output.txt'
+OUTPUT_FILE = 'output.zip'
 FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
