@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import ecc.hamming_funcs as hamming
 import time
+from tqdm import tqdm
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
 
 def encode_file():
@@ -10,21 +11,22 @@ def encode_file():
         with open(f'./input_files/{INPUT_PATH}', 'rb') as file:
             binary_data = np.fromfile(file, dtype=np.uint8)
 
-        print("1enc. File Read Successfully!")
+        # print("1enc. File Read Successfully!")
 
         binary_data = np.unpackbits(binary_data)
 
-        print(f"2enc. Length of binary data: {len(binary_data)}")
+        # print(f"2enc. Length of binary data: {len(binary_data)}")
 
         # Encode the binary data using Hamming(8, 4) code
+        print("Encoding binary data using Hamming(8, 4) code...\n Progress: ")
         binary_data = np.array([
             hamming.encode(binary_data[i:i + 8])
-            for i in range(0, len(binary_data), 8)
+            for i in tqdm(range(0, len(binary_data), 8))
         ])
 
         binary_data = np.concatenate([np.array(list(s), dtype=int) for s in binary_data])
 
-        print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
+        # print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
 
         # Convert 1s and 0s to 255s and 0s
         binary_data = np.where(binary_data == 1, 255, 0)
@@ -35,12 +37,13 @@ def encode_file():
             padding_length = (FRAME_HEIGHT * FRAME_WIDTH) - remainder
             binary_data = np.append(binary_data, np.zeros(padding_length))
 
-        print(f"4enc. Length of binary data after padding: {len(binary_data)}")
+        # print(f"4enc. Length of binary data after padding: {len(binary_data)}")
 
         # Split the binary data into frames
+        print(f"Splitting binary data into frames...\n Progress: ")
         frames = np.array([
             binary_data[i:i + (FRAME_HEIGHT * FRAME_WIDTH)]
-            for i in range(0, len(binary_data), FRAME_HEIGHT * FRAME_WIDTH)
+            for i in tqdm(range(0, len(binary_data), FRAME_HEIGHT * FRAME_WIDTH))
         ])
 
         # Convert the frames to 8-bit grayscale images
@@ -49,7 +52,7 @@ def encode_file():
             for frame in frames
         ])
 
-        print(f"5enc. Frames created successfully! Number of frames: {len(frames)}")
+        # print(f"5enc. Frames created successfully! Number of frames: {len(frames)}")
 
         # Save the frames to a video file
         video_writer = cv2.VideoWriter(

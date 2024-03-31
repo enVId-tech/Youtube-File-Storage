@@ -8,9 +8,7 @@ FRAME = {
     '480p': [480, 854],
     '144p': [144, 256]
 }
-# INPUT_PATH = 'test100k.txt'
-INPUT_PATH = 'test.zip'
+INPUT_PATH = 'hwi.exe'
 OUTPUT_PATH = 'output.mp4'
-# OUTPUT_FILE = 'output.txt'
-OUTPUT_FILE = 'output.zip'
+OUTPUT_FILE = 'output_hwi.exe'
 FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
