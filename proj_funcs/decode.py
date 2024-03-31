@@ -88,7 +88,7 @@ def decode_video():
         with open(f'./output_files/{OUTPUT_FILE}', 'wb') as file:
             file.write(bit_frames)
 
-        print(f"6dec. File saved successfully! Time taken: {time.time() - timer} seconds.")
+        print(f"\nFile saved successfully! Time taken: {time.time() - timer} seconds.")
         return True
     except Exception as e:
         print(f"Error in undo_main(): {e}")

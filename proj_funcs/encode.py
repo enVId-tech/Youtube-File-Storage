@@ -69,7 +69,7 @@ def encode_file():
 
         video_writer.release()
 
-        print(f"6enc. Video file saved successfully! Time taken: {time.time() - timer} seconds")
+        print(f"\nVideo file saved successfully! Time taken: {time.time() - timer} seconds")
         return True
     except Exception as e:
         print(f"Error in main(): {e}")

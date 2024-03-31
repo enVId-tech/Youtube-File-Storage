@@ -21,6 +21,8 @@ def main():
             print("Decode failed!")
             exit(1)
 
+        print("\n\n----------------------------------------------\n\n")
+
         input_checksum = compute_checksum(f'./input_files/{INPUT_PATH}')
         output_checksum = compute_checksum(f'./output_files/{OUTPUT_FILE}')
 
