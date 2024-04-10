@@ -9,7 +9,7 @@ FRAME = {
     '480p': [480, 854],
     '144p': [144, 256]
 }
-INPUT_PATH = 'test_files.zip'
+INPUT_PATH = 'bruh.zip'
 OUTPUT_PATH = 'output.mp4'
 OUTPUT_FILE = 'output_files.zip'
 FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
