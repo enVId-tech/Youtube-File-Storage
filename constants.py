@@ -1,3 +1,4 @@
+# Video Settings
 DEVICE = 'cpu'
 FRAME_RATE = 30
 FRAME = {
@@ -12,3 +13,6 @@ INPUT_PATH = 'test_files.zip'
 OUTPUT_PATH = 'output.mp4'
 OUTPUT_FILE = 'output_files.zip'
 FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
+
+# Hamming Code Settings
+PARITY_BLOCK_SIZE = 32 # Is in bits, keep it as a multiple of 8

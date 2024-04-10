@@ -3,7 +3,7 @@ import numpy as np
 import ecc.hamming_funcs as hamming
 import time
 from tqdm import tqdm
-from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH
+from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH, PARITY_BLOCK_SIZE
 
 def encode_file():
     try:
@@ -16,6 +16,27 @@ def encode_file():
         binary_data = np.unpackbits(binary_data)
 
         # print(f"2enc. Length of binary data: {len(binary_data)}")
+
+        binary_data_len = len(binary_data)
+
+        byte_data = binary_data_len / 8
+
+        if not byte_data % 8 == 0:
+            return Exception("Byte data is not a multiple of 8")
+
+        block_size = PARITY_BLOCK_SIZE
+
+        while (byte_data > 0):
+            if byte_data > block_size:
+                print(f"Block size: {block_size}")
+                byte_data -= block_size
+                if byte_data == 0:
+                    break
+            elif byte_data == block_size:
+                block_size /= 2
+            else:
+                return Exception("Byte data is less than the parity block size")
+                
 
         # Encode the binary data using Hamming(8, 4) code
         print("Encoding binary data using Hamming(8, 4) code...\n Progress: ")
