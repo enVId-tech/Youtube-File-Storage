@@ -20,24 +20,34 @@ def encode_file():
 
         binary_data_len = len(binary_data)
 
-        byte_data = binary_data_len / 8
+        byte_size = binary_data_len / 8
 
-        if not byte_data % 8 == 0:
+        if not byte_size % 8 == 0:
             return Exception("Byte data is not a multiple of 8")
 
         block_size = PARITY_BLOCK_SIZE
 
-        while (byte_data > 0):
-            if byte_data > block_size:
-                print(f"Block size: {block_size}")
-                byte_data -= block_size
-                if byte_data == 0:
-                    break
-            elif byte_data == block_size:
-                block_size /= 2
-            else:
-                return Exception("Byte data is less than the parity block size")
+        byte_sizes = []
+
+        remainder = byte_size % block_size
+
+        print(remainder)
+
+        if remainder != 0:
+            while remainder > 0:
+                if remainder == block_size / 2 and not remainder == block_size and not block_size == 8:
+                    block_size /= 2
                 
+                byte_sizes.append((byte_size - (remainder % block_size)) / block_size)
+                remainder -= block_size
+            if remainder != 0:
+                print("Remainder is not 0")
+                exit(1)
+        else:
+            byte_sizes.append(byte_size / block_size)
+                
+        print(binary_data_len, byte_size, block_size, byte_sizes, remainder)
+        exit(1)
 
         # Encode the binary data using Hamming(8, 4) code
         print("Encoding binary data using Hamming(8, 4) code...\n Progress: ")
