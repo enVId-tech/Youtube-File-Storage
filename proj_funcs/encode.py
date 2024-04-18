@@ -3,8 +3,10 @@ import cv2
 import numpy as np
 import ecc.hamming_funcs as hamming
 import time
+import math
 from tqdm import tqdm
 from constants import FRAME_HEIGHT, FRAME_WIDTH, FRAME_RATE, INPUT_PATH, OUTPUT_PATH, PARITY_BLOCK_SIZE
+
 
 def encode_file():
     try:
@@ -27,25 +29,26 @@ def encode_file():
 
         block_size = PARITY_BLOCK_SIZE
 
-        byte_sizes = []
+        byte_sizes = {}
+
+        for exponent in range(3, int(math.log2(block_size)) + 1):
+            key = str(2 ** exponent)
+            byte_sizes[key] = 0
 
         remainder = byte_size % block_size
 
-        print(remainder)
+        byte_sizes[str(block_size)] += int((byte_size - remainder) / block_size)
 
-        if remainder != 0:
+        if remainder > 0:
             while remainder > 0:
-                if remainder == block_size / 2 and not remainder == block_size and not block_size == 8:
+                print(remainder, block_size)
+                if remainder < block_size and block_size >= 8:
+                    byte_sizes[str(int(block_size))] += 0
                     block_size /= 2
-                
-                byte_sizes.append((byte_size - (remainder % block_size)) / block_size)
-                remainder -= block_size
-            if remainder != 0:
-                print("Remainder is not 0")
-                exit(1)
-        else:
-            byte_sizes.append(byte_size / block_size)
-                
+                else:
+                    byte_sizes[str(int(block_size))] = int(block_size / (remainder - (remainder % block_size)))
+                    remainder %= block_size
+
         print(binary_data_len, byte_size, block_size, byte_sizes, remainder)
         exit(1)
 
@@ -56,7 +59,8 @@ def encode_file():
             for i in tqdm(range(0, len(binary_data), 8))
         ])
 
-        binary_data = np.concatenate([np.array(list(s), dtype=int) for s in binary_data])
+        binary_data = np.concatenate(
+            [np.array(list(s), dtype=int) for s in binary_data])
 
         # print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
 
@@ -74,8 +78,8 @@ def encode_file():
         # Split the binary data into frames
         print(f"Splitting binary data into frames...\n Progress: ")
         frames = np.array([
-            binary_data[i:i + (FRAME_HEIGHT * FRAME_WIDTH)]
-            for i in tqdm(range(0, len(binary_data), FRAME_HEIGHT * FRAME_WIDTH))
+            binary_data[i:i + (FRAME_HEIGHT * FRAME_WIDTH)] for i in tqdm(
+                range(0, len(binary_data), FRAME_HEIGHT * FRAME_WIDTH))
         ])
 
         # Convert the frames to 8-bit grayscale images
@@ -87,12 +91,9 @@ def encode_file():
         # print(f"5enc. Frames created successfully! Number of frames: {len(frames)}")
 
         # Save the frames to a video file
-        video_writer = cv2.VideoWriter(
-            f'./output_files/{OUTPUT_PATH}',
-            cv2.VideoWriter_fourcc(*'mp4v'),
-            FRAME_RATE,
-            (FRAME_WIDTH, FRAME_HEIGHT)
-        )
+        video_writer = cv2.VideoWriter(f'./output_files/{OUTPUT_PATH}',
+                                       cv2.VideoWriter_fourcc(*'mp4v'),
+                                       FRAME_RATE, (FRAME_WIDTH, FRAME_HEIGHT))
 
         for frame in frames:
             frame = frame.astype(np.uint8)
@@ -101,7 +102,9 @@ def encode_file():
 
         video_writer.release()
 
-        print(f"\nVideo file saved successfully! Time taken: {time.time() - timer} seconds")
+        print(
+            f"\nVideo file saved successfully! Time taken: {time.time() - timer} seconds"
+        )
         return True
     except Exception as e:
         print(f"Error in main(): {e}")
