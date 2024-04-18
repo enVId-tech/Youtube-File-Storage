@@ -50,19 +50,19 @@ def encode_file():
                     remainder %= block_size
 
         print(binary_data_len, byte_size, block_size, byte_sizes, remainder)
-        exit(1)
 
-        # Encode the binary data using Hamming(8, 4) code
-        print("Encoding binary data using Hamming(8, 4) code...\n Progress: ")
+        # Encode the binary data using Hamming Code using the byte sizes dictionary
         binary_data = np.array([
-            hamming.encode(binary_data[i:i + 8])
-            for i in tqdm(range(0, len(binary_data), 8))
+            hamming.encode(binary_data[i:i + int(key)])
+            for key in byte_sizes.keys()
+            for i in tqdm(range(0, len(binary_data), int(key) * 8))
         ])
 
         binary_data = np.concatenate(
             [np.array(list(s), dtype=int) for s in binary_data])
 
-        # print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
+        print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
+        exit(1)
 
         # Convert 1s and 0s to 255s and 0s
         binary_data = np.where(binary_data == 1, 255, 0)
