@@ -13,56 +13,57 @@ def encode_file():
         timer = time.time()
         with open(f'./input_files/{INPUT_PATH}', 'rb') as file:
             binary_data = np.fromfile(file, dtype=np.uint8)
-
         # print("1enc. File Read Successfully!")
-
         binary_data = np.unpackbits(binary_data)
-
         # print(f"2enc. Length of binary data: {len(binary_data)}")
-
         binary_data_len = len(binary_data)
-
         byte_size = binary_data_len / 8
-
         if not byte_size % 8 == 0:
             return Exception("Byte data is not a multiple of 8")
-
         block_size = PARITY_BLOCK_SIZE
-
         byte_sizes = {}
-
         for exponent in range(3, int(math.log2(block_size)) + 1):
             key = str(2 ** exponent)
             byte_sizes[key] = 0
-
         remainder = byte_size % block_size
-
         byte_sizes[str(block_size)] += int((byte_size - remainder) / block_size)
-
         if remainder > 0:
             while remainder > 0:
-                print(remainder, block_size)
                 if remainder < block_size and block_size >= 8:
                     byte_sizes[str(int(block_size))] += 0
                     block_size /= 2
                 else:
                     byte_sizes[str(int(block_size))] = int(block_size / (remainder - (remainder % block_size)))
                     remainder %= block_size
+                    block_size = PARITY_BLOCK_SIZE
 
-        print(binary_data_len, byte_size, block_size, byte_sizes, remainder)
+        # Split the binary data array into blocks based on the dictionary
+        split_data = []
+        for block_size, count in byte_sizes.items():
+            block_size = int(block_size)
+            split_indices = [0]
+            for _ in tqdm(range(count)):
+                start = split_indices[-1]
+                end = start + block_size
+                split_indices.append(end)
+                split_data.append(binary_data[start:end])
 
-        # Encode the binary data using Hamming Code using the byte sizes dictionary
-        binary_data = np.array([
-            hamming.encode(binary_data[i:i + int(key)])
-            for key in byte_sizes.keys()
-            for i in tqdm(range(0, len(binary_data), int(key) * 8))
-        ])
+        # Encode each block using the hamming.encode() function
+        encoded_blocks = []
+        for block in tqdm(split_data):
+            encoded_block = hamming.encode(block)
+            encoded_blocks.append(encoded_block)
 
-        binary_data = np.concatenate(
-            [np.array(list(s), dtype=int) for s in binary_data])
+        # Flatten the list of encoded blocks
+        for i in tqdm(range(len(encoded_blocks))):
+            encoded_blocks[0] += encoded_blocks[i]
 
-        print(f"3enc. Length of binary data after encoding: {len(binary_data)}")
-        exit(1)
+        for i in tqdm(range(1, len(encoded_blocks))):
+            encoded_blocks.pop(i)
+
+        encoded_blocks = np.array(encoded_blocks)
+        print(f"3enc. Length of binary data after encoding: {len(encoded_blocks)}")
+        exit(0)
 
         # Convert 1s and 0s to 255s and 0s
         binary_data = np.where(binary_data == 1, 255, 0)

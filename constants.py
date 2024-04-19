@@ -15,4 +15,4 @@ OUTPUT_FILE = 'output_files.zip'
 FRAME_HEIGHT, FRAME_WIDTH = FRAME['144p']
 
 # Hamming Code Settings
-PARITY_BLOCK_SIZE = 128 # Is in bits, keep it as a power of 2
+PARITY_BLOCK_SIZE = 1024 # Is in bits, keep it as a power of 2

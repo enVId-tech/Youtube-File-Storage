@@ -131,16 +131,16 @@ def removeRedundantBits(arr):
 		print(f"Error in main(): {e}")
 		exit(1)
 
-def encode(arr):
+def encode(list_elem):
 	try:
-		if type(arr) == np.ndarray:
-			arr = arr.tolist()
-		str_arr = ''.join([str(elem) for elem in arr])
+		if type(list_elem) == np.ndarray:
+			list_elem = list_elem.tolist()
+		str_arr = ''.join([str(elem) for elem in list_elem])
 		m = len(str_arr)
 		r = calcRedundantBits(m)
-		arr = posRedundantBits(str_arr, r)
-		arr = calcParityBits(arr, r)
-		return arr
+		list_elem = posRedundantBits(str_arr, r)
+		list_elem = calcParityBits(list_elem, r)
+		return list_elem
 	except Exception as e:
 		print(f"Error in main(): {e}")
 		exit(1)
