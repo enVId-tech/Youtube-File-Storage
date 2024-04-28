@@ -14,6 +14,8 @@ def main():
             print("Encode failed!")
             exit(1)
 
+        exit(0)
+
         print("Running decode...")
         decode_video()
 
