@@ -22,9 +22,6 @@ def encode_file():
 
         binary_data_len = len(binary_data)
 
-
-        byte_size_checksum = binary_data_len / 8
-
         if not binary_data_len % 8 == 0:
             print(f"Byte data is not a multiple of 8")
             return Exception("Byte data is not a multiple of 8")
